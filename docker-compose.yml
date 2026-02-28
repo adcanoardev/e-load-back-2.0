@@ -1,0 +1,23 @@
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongo-eload
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data_eload:/data/db
+
+  backend:
+    build: .
+    container_name: eload-back
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - DB_URL=mongodb://mongo:27017/eload_db
+    depends_on:
+      - mongo
+
+volumes:
+  mongo_data_eload:
