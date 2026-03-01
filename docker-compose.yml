@@ -6,6 +6,7 @@ services:
       - "27017:27017"
     volumes:
       - mongo_data_eload:/data/db
+      - mongo_config_eload:/data/configdb
 
   backend:
     build: .
@@ -19,5 +20,16 @@ services:
     depends_on:
       - mongo
 
+  frontend:
+    build: ../e-load-front-2.0
+    container_name: eload-front
+    ports:
+      - "5173:5173"
+    environment:
+      - VITE_APP_URL_API=http://localhost:8000/
+    depends_on:
+      - backend
+
 volumes:
   mongo_data_eload:
+  mongo_config_eload:
