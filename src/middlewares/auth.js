@@ -1,81 +1,64 @@
-const User = require("../api/users/users.model");
-const { verifyJwt } = require("../utils/jwt");
+const jwt = require("jsonwebtoken");
+const User = require("../models/User");
 
-const getTokenFromHeader = (req) => {
-    const auth = req.headers.authorization;
-    if (!auth || typeof auth !== "string") return null;
-
-    // Aceptamos: "Bearer <token>" (con o sin mayúsculas)
-    const parts = auth.split(" ");
-    if (parts.length !== 2) return null;
-
-    const [type, token] = parts;
-    if (type.toLowerCase() !== "bearer" || !token) return null;
-
-    return token;
-};
-
+/**
+ * Verifica el token JWT y adjunta req.user con el usuario completo de BD.
+ */
 const isAuth = async (req, res, next) => {
     try {
-        const token = getTokenFromHeader(req);
-        if (!token) {
-            return res.status(401).json({ msg: "Unauthorized" });
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).json({ error: "No token provided" });
         }
 
-        let validToken;
-        try {
-            validToken = verifyJwt(token);
-        } catch (err) {
-            console.error("[isAuth] Invalid token:", err?.message || err);
-            return res.status(401).json({ msg: "Unauthorized" });
+        const token = authHeader.split(" ")[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        const user = await User.findById(decoded.id).select("-password");
+        if (!user) {
+            return res.status(401).json({ error: "User not found" });
         }
 
-        const userLogged = await User.findById(validToken.id).select("-password");
-        if (!userLogged) {
-            return res.status(401).json({ msg: "Unauthorized" });
-        }
-
-        req.user = userLogged;
-        return next();
+        req.user = user;
+        next();
     } catch (error) {
-        console.error("[isAuth] ERROR:", error);
-        return res.status(500).json({ msg: "Internal Server Error" });
+        if (error.name === "TokenExpiredError") {
+            return res.status(401).json({ error: "Token expired" });
+        }
+        return res.status(401).json({ error: "Invalid token" });
     }
 };
 
+/**
+ * Requiere que el usuario autenticado tenga rol admin.
+ * Siempre debe ir después de isAuth.
+ */
 const isAdmin = async (req, res, next) => {
     try {
-        const token = getTokenFromHeader(req);
-        if (!token) {
-            return res.status(401).json({ msg: "Unauthorized" });
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith("Bearer ")) {
+            return res.status(401).json({ error: "No token provided" });
         }
 
-        let validToken;
-        try {
-            validToken = verifyJwt(token);
-        } catch (err) {
-            console.error("[isAdmin] Invalid token:", err?.message || err);
-            return res.status(401).json({ msg: "Unauthorized" });
+        const token = authHeader.split(" ")[1];
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+        const user = await User.findById(decoded.id).select("-password");
+        if (!user) {
+            return res.status(401).json({ error: "User not found" });
+        }
+        if (user.rol !== "admin") {
+            return res.status(403).json({ error: "Admin access required" });
         }
 
-        const userLogged = await User.findById(validToken.id).select("-password");
-        if (!userLogged) {
-            return res.status(401).json({ msg: "Unauthorized" });
-        }
-
-        if (userLogged.rol !== "admin") {
-            return res.status(403).json({ msg: "Forbidden" });
-        }
-
-        req.user = userLogged;
-        return next();
+        req.user = user;
+        next();
     } catch (error) {
-        console.error("[isAdmin] ERROR:", error);
-        return res.status(500).json({ msg: "Internal Server Error" });
+        if (error.name === "TokenExpiredError") {
+            return res.status(401).json({ error: "Token expired" });
+        }
+        return res.status(401).json({ error: "Invalid token" });
     }
 };
 
-module.exports = {
-    isAuth,
-    isAdmin,
-};
+module.exports = { isAuth, isAdmin };

@@ -1,13 +1,17 @@
 {
   "name": "e-load-back",
-  "version": "1.0.0",
-  "description": "",
+  "version": "2.0.0",
+  "description": "API REST para gestión de puntos de recarga eléctrica",
   "main": "index.js",
+  "type": "commonjs",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "nodemon index.js",
     "start": "node index.js",
-    "postsseed": ""
+    "test": "jest --runInBand --forceExit",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint src/ --ext .js",
+    "lint:fix": "eslint src/ --ext .js --fix"
   },
   "keywords": [],
   "author": "",
@@ -21,9 +25,18 @@
     "jsonwebtoken": "^9.0.0",
     "mongoose": "^7.1.0",
     "multer": "^1.4.5-lts.1",
-    "multer-storage-cloudinary": "^4.0.0"
+    "multer-storage-cloudinary": "^4.0.0",
+    "zod": "^3.22.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.22"
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "nodemon": "^2.0.22",
+    "supertest": "^6.3.4"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/__tests__/**/*.test.js"],
+    "setupFilesAfterFramework": []
   }
 }

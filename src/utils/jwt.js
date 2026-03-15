@@ -1,11 +1,13 @@
 const jwt = require("jsonwebtoken");
-const generateSign = (id, user) => {
-    return jwt.sign({id, user}, process.env.JWT_SECRET, {expiresIn: '30d'});
-}
-const verifyJwt = (token) => {
-    return jwt.verify(token, process.env.JWT_SECRET);
-}
-module.exports = {
-    generateSign,
-    verifyJwt
-}
+
+/**
+ * Genera un JWT firmado con el id y username del usuario.
+ * @param {string} id - MongoDB ObjectId del usuario
+ * @param {string} username
+ * @returns {string} token JWT
+ */
+const generateSign = (id, username) => {
+    return jwt.sign({ id, username }, process.env.JWT_SECRET, { expiresIn: "7d" });
+};
+
+module.exports = { generateSign };

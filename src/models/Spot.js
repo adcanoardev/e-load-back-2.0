@@ -9,14 +9,19 @@ const spotSchema = new mongoose.Schema(
         },
         type: { type: String, required: true, enum: ["CHAdeMO", "CCS2", "Type2", "Schuko"] },
         rate: { type: String, required: true },
-        load: { type: Number, default: 0, max: 100 },
+        load: { type: Number, default: 0, min: 0, max: 100 },
         station: { type: mongoose.Types.ObjectId, ref: "stations" },
-        state: { type: String, required: true, enum: ["Libre", "Ocupado", "Fuera de Servicio"], default: "Libre" },
+        state: {
+            type: String,
+            required: true,
+            enum: ["Libre", "Ocupado", "Fuera de Servicio"],
+            default: "Libre",
+        },
     },
     {
         timestamps: true,
         collection: "spots",
-    },
+    }
 );
 
 const Spot = mongoose.model("spots", spotSchema);

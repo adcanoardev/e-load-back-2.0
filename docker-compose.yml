@@ -1,34 +1,68 @@
 services:
+
   mongo:
-    image: mongo:latest
+    image: mongo:7
     container_name: mongo-eload
+    restart: unless-stopped
     ports:
       - "27017:27017"
     volumes:
       - mongo_data_eload:/data/db
       - mongo_config_eload:/data/configdb
+    networks:
+      - eload-net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
 
   backend:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: eload-back
+    restart: unless-stopped
     ports:
       - "8000:8000"
     env_file:
       - .env
     environment:
+      - PORT=8000
       - DB_URL=mongodb://mongo:27017/eload_db
+      - NODE_ENV=production
     depends_on:
-      - mongo
+      mongo:
+        condition: service_healthy
+    networks:
+      - eload-net
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8000/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   frontend:
-    build: ../e-load-front-2.0
+    build:
+      context: ../e-load-front-2.0
+      dockerfile: Dockerfile
     container_name: eload-front
+    restart: unless-stopped
     ports:
       - "5173:5173"
     environment:
-      - VITE_APP_URL_API=http://localhost:8000/
+      - VITE_APP_URL_API=http://localhost:8000/api
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    networks:
+      - eload-net
+
+networks:
+  eload-net:
+    driver: bridge
 
 volumes:
   mongo_data_eload:
